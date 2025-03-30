@@ -1,13 +1,13 @@
 {
   "name": "clijack",
   "version": "0.1.0",
-  "description": "A library for enhancing command-line tools with custom shortcuts and output handling",
+  "description": "A CLI wrapper for interactive Node.js applications",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "scripts": {
-    "build": "tsc && mkdir -p dist/examples/scenarios/base-interactive && cp examples/scenarios/base-interactive/cli.sh dist/examples/scenarios/base-interactive/",
-    "runtest": "node dist/examples/scenarios/base-interactive/run.js",
+    "build": "tsc && ./test/setup.sh",
     "test": "npm run build && jest",
+    "test:base-interactive": "node dist/examples/scenarios/base-interactive/run.js",
     "clean": "rm -rf dist"
   },
   "keywords": [],
