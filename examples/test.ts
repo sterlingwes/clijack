@@ -16,7 +16,7 @@ export async function main() {
   childProcess.registerShortcut({
     key: "s",
     handler: () => {
-      console.log("\nStarting server...");
+      console.log("\nStarting server via shortcut...");
       childProcess.stdin.write("1");
     },
     description: "Start server",
@@ -25,7 +25,7 @@ export async function main() {
   childProcess.registerShortcut({
     key: "c",
     handler: () => {
-      console.log("\nChecking status...");
+      console.log("\nChecking status via shortcut...");
       childProcess.stdin.write("2");
     },
     description: "Check status",

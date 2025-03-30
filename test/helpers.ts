@@ -1,32 +1,31 @@
 import { EventEmitter } from "events";
-import { CommandWrapper } from "../src";
+import * as os from "os";
+import * as pty from "node-pty";
 
 export class CLITestHarness extends EventEmitter {
-  private wrapper: CommandWrapper;
   private output: string[] = [];
-  private process: any;
+  private term: pty.IPty | null = null;
 
   constructor() {
     super();
-    this.wrapper = new CommandWrapper();
   }
 
   async startCLI(entryPoint: string): Promise<void> {
-    // Import and run the CLI entry point
-    const cli = require(entryPoint);
-    this.process = await cli.main();
+    // Create a new PTY with proper terminal environment
+    this.term = pty.spawn("node", [entryPoint], {
+      cwd: process.cwd(),
+    });
 
-    // Set up output capture
+    // Set up output handling
     this.output = [];
     let buffer = "";
 
-    // Capture stdout
-    this.process.stdout.on("data", (data: Buffer) => {
-      // Append new data to buffer
-      buffer += data.toString();
+    // Capture terminal output
+    this.term.onData((data: string) => {
+      buffer += data;
 
-      // Split buffer into lines, keeping incomplete lines in buffer
-      const lines = buffer.split("\n");
+      // Process complete lines
+      const lines = buffer.split("\r\n");
       buffer = lines.pop() || ""; // Keep the last incomplete line
 
       // Process complete lines
@@ -38,12 +37,15 @@ export class CLITestHarness extends EventEmitter {
       }
     });
 
-    // Wait for initial menu
+    // Wait for the CLI to start
     await this.waitForOutput(/Press a key to continue/);
   }
 
   async sendInput(input: string): Promise<void> {
-    this.process.stdin.write(input);
+    if (!this.term) {
+      throw new Error("No terminal running");
+    }
+    this.term.write(input);
     // Add a small delay after sending input to allow for output processing
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
@@ -77,7 +79,6 @@ export class CLITestHarness extends EventEmitter {
     await new Promise((resolve) => setTimeout(resolve, 100));
     const found = this.output.some((line) => pattern.test(line));
     if (!found) {
-      console.log("Current output:", this.output);
       throw new Error(`Expected output matching ${pattern} but found none`);
     }
   }
@@ -92,9 +93,8 @@ export class CLITestHarness extends EventEmitter {
   }
 
   async cleanup(): Promise<void> {
-    if (this.process) {
-      this.process.kill();
+    if (this.term) {
+      this.term.kill();
     }
-    this.wrapper.killAll();
   }
 }

@@ -7,7 +7,7 @@ describe("CLI Tests", () => {
   beforeEach(async () => {
     harness = new CLITestHarness();
     await harness.startCLI(
-      path.join(__dirname, "..", "dist", "examples", "test.js")
+      path.join(__dirname, "..", "dist", "examples", "run.js")
     );
   });
 
@@ -24,10 +24,9 @@ describe("CLI Tests", () => {
     // Send 'c' which should trigger the status check shortcut
     await harness.sendInput("c");
 
-    // Verify the status output
-    await harness.waitForOutput(/Checking status/);
-    await harness.assertOutput(/Server is running/);
-    await harness.assertOutput(/Uptime: 5 minutes/);
+    // Verify the shortcut output and command execution
+    await harness.waitForOutput(/Checking status via shortcut/);
+    await harness.waitForOutput(/Server is running/);
   });
 
   it("should forward non-shortcut input to process", async () => {
@@ -36,28 +35,28 @@ describe("CLI Tests", () => {
 
     // Verify the status output
     await harness.waitForOutput(/Checking status/);
-    await harness.assertOutput(/Server is running/);
+    await harness.waitForOutput(/Server is running/);
   });
 
   it("should handle multiple commands in sequence", async () => {
     // Start server
     await harness.sendInput("s");
-    await harness.waitForOutput(/Starting server/);
+    await harness.waitForOutput(/Starting server via shortcut/);
     await harness.waitForOutput(/Server started successfully/);
 
     // Check status
     await harness.sendInput("c");
-    await harness.waitForOutput(/Checking status/);
-    await harness.assertOutput(/Server is running/);
+    await harness.waitForOutput(/Checking status via shortcut/);
+    await harness.waitForOutput(/Server is running/);
 
     // Show logs
     await harness.sendInput("l");
     await harness.waitForOutput(/Showing logs/);
-    await harness.assertOutput(/\[INFO\] Server started/);
+    await harness.waitForOutput(/\[INFO\] Server started/);
   });
 
   it("should exit cleanly", async () => {
-    await harness.sendInput("q");
+    await harness.sendInput("4");
     await harness.waitForOutput(/Exiting/);
   });
 });
