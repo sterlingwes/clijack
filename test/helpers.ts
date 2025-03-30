@@ -10,7 +10,7 @@ export class CLITestHarness extends EventEmitter {
     super();
   }
 
-  async startCLI(entryPoint: string): Promise<void> {
+  async startCLI(entryPoint: string, readyPattern: RegExp): Promise<void> {
     this.term = pty.spawn("node", [entryPoint], {
       cwd: process.cwd(),
     });
@@ -22,6 +22,7 @@ export class CLITestHarness extends EventEmitter {
       buffer += data;
 
       const lines = buffer.split("\r\n");
+      buffer = lines.pop() || "";
 
       for (const line of lines) {
         if (line.trim()) {
@@ -31,7 +32,7 @@ export class CLITestHarness extends EventEmitter {
       }
     });
 
-    await this.waitForOutput(/Press a key to continue/);
+    await this.waitForOutput(readyPattern);
   }
 
   async sendInput(input: string): Promise<void> {

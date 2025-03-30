@@ -15,7 +15,8 @@ describe("CLI Tests", () => {
         "scenarios",
         "base-interactive",
         "run.js"
-      )
+      ),
+      /Press a key to continue/
     );
   });
 
