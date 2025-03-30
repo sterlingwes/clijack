@@ -11,24 +11,18 @@ export class CLITestHarness extends EventEmitter {
   }
 
   async startCLI(entryPoint: string): Promise<void> {
-    // Create a new PTY with proper terminal environment
     this.term = pty.spawn("node", [entryPoint], {
       cwd: process.cwd(),
     });
 
-    // Set up output handling
     this.output = [];
     let buffer = "";
 
-    // Capture terminal output
     this.term.onData((data: string) => {
       buffer += data;
 
-      // Process complete lines
       const lines = buffer.split("\r\n");
-      buffer = lines.pop() || ""; // Keep the last incomplete line
 
-      // Process complete lines
       for (const line of lines) {
         if (line.trim()) {
           this.output.push(line.trim());
@@ -37,7 +31,6 @@ export class CLITestHarness extends EventEmitter {
       }
     });
 
-    // Wait for the CLI to start
     await this.waitForOutput(/Press a key to continue/);
   }
 
@@ -46,7 +39,6 @@ export class CLITestHarness extends EventEmitter {
       throw new Error("No terminal running");
     }
     this.term.write(input);
-    // Add a small delay after sending input to allow for output processing
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
@@ -66,7 +58,6 @@ export class CLITestHarness extends EventEmitter {
 
       this.on("output", handler);
 
-      // Check if we already have matching output
       if (this.output.some((line) => pattern.test(line))) {
         clearTimeout(timer);
         resolve();
@@ -75,8 +66,6 @@ export class CLITestHarness extends EventEmitter {
   }
 
   async assertOutput(pattern: RegExp): Promise<void> {
-    // Add a small delay before checking output
-    await new Promise((resolve) => setTimeout(resolve, 100));
     const found = this.output.some((line) => pattern.test(line));
     if (!found) {
       throw new Error(`Expected output matching ${pattern} but found none`);
@@ -84,8 +73,6 @@ export class CLITestHarness extends EventEmitter {
   }
 
   async assertNoOutput(pattern: RegExp): Promise<void> {
-    // Add a small delay before checking output
-    await new Promise((resolve) => setTimeout(resolve, 100));
     const found = this.output.some((line) => pattern.test(line));
     if (found) {
       throw new Error(`Expected no output matching ${pattern} but found some`);

@@ -12,7 +12,6 @@ export async function main() {
     },
   });
 
-  // Register shortcuts
   childProcess.registerShortcut({
     key: "s",
     handler: () => {
@@ -40,7 +39,6 @@ export async function main() {
     description: "Show logs",
   });
 
-  // Register output matchers
   childProcess.registerOutputMatcher({
     pattern: /Server started successfully/,
     eventName: "serverStarted",
@@ -50,7 +48,6 @@ export async function main() {
     },
   });
 
-  // Listen for events
   childProcess.on("serverStarted", (context) => {
     console.log("Server started with context:", context);
   });

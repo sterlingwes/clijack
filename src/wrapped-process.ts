@@ -24,17 +24,14 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
     this.childProcess = childProcess;
     this.config = config;
 
-    // Set up exit promise
     this.exitPromise = new Promise((resolve) => {
       this.exitResolve = resolve;
     });
 
-    // Handle process exit
     this.childProcess.on("exit", () => {
       this.exitResolve?.();
     });
 
-    // Handle process errors
     this.childProcess.on("error", (error) => {
       super.emit("error", {
         match: [error.message] as RegExpMatchArray,
@@ -42,7 +39,6 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
       });
     });
 
-    // Set up output handling
     this.setupOutputHandling();
   }
 
@@ -91,7 +87,6 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
   private setupOutputHandling(): void {
     if (!this.childProcess.stdout || !this.childProcess.stderr) return;
 
-    // Pipe stdout and stderr to parent process
     this.childProcess.stdout.pipe(process.stdout);
     this.childProcess.stderr.pipe(process.stderr);
 
@@ -102,24 +97,19 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
       for (const line of lines) {
         if (!line.trim()) continue;
 
-        // Update output buffer
         this.outputBuffer.push(line);
         if (this.outputBuffer.length > 100) {
-          // Default max buffer size
           this.outputBuffer.shift();
         }
 
-        // Check for menu match if configured
         if (this.config.menuMatcher?.pattern.test(line)) {
           this.isInteractive = true;
-          // Emit event to notify parent that this process is now interactive
           this.emit("interactive", {
             match: [line] as RegExpMatchArray,
             context: { before: [], after: [], fullMatch: line },
           });
         }
 
-        // Check for output matchers
         for (const [pattern, matcher] of this.outputMatchers.entries()) {
           const match = line.match(pattern);
           if (match) {
