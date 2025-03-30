@@ -1,0 +1,23 @@
+{
+  "name": "clijack",
+  "version": "0.1.0",
+  "description": "A tool for wrapping and enhancing command-line tools with custom shortcuts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "ts-node examples/test.ts"
+  },
+  "keywords": [
+    "cli",
+    "command-line",
+    "wrapper"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.0"
+  }
+}
