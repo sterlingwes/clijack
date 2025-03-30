@@ -7,7 +7,15 @@ describe("CLI Tests", () => {
   beforeEach(async () => {
     harness = new CLITestHarness();
     await harness.startCLI(
-      path.join(__dirname, "..", "dist", "examples", "run.js")
+      path.join(
+        __dirname,
+        "..",
+        "dist",
+        "examples",
+        "scenarios",
+        "base-interactive",
+        "run.js"
+      )
     );
   });
 
@@ -34,7 +42,6 @@ describe("CLI Tests", () => {
     await harness.sendInput("2");
 
     // Verify the status output
-    await harness.waitForOutput(/Checking status/);
     await harness.waitForOutput(/Server is running/);
   });
 

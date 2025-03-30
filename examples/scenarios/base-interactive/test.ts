@@ -1,4 +1,4 @@
-import { CommandWrapper } from "../src";
+import { CommandWrapper } from "../../../src";
 import path from "path";
 
 export async function main() {
