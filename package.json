@@ -1,23 +1,22 @@
 {
   "name": "clijack",
   "version": "0.1.0",
-  "description": "A tool for wrapping and enhancing command-line tools with custom shortcuts",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "description": "A library for enhancing command-line tools with custom shortcuts and output handling",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "test": "ts-node examples/test.ts"
+    "build": "tsc && mkdir -p dist/examples && cp examples/cli.sh dist/examples/",
+    "test": "jest",
+    "clean": "rm -rf dist"
   },
-  "keywords": [
-    "cli",
-    "command-line",
-    "wrapper"
-  ],
+  "keywords": [],
   "author": "",
-  "license": "MIT",
+  "license": "ISC",
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.0.0"
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.28",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.4.2"
   }
 }

@@ -1,49 +1,47 @@
 import { CommandWrapper } from "../src";
 import path from "path";
 
-async function main() {
+export async function main() {
   const wrapper = new CommandWrapper();
-
-  // Spawn our interactive CLI process
-  const process = wrapper.spawn({
-    command: path.join(__dirname, "cli.sh"),
-    args: [],
+  const childProcess = wrapper.spawn({
+    command: "bash",
+    args: [path.join(__dirname, "cli.sh")],
     menuMatcher: {
       pattern: /Press a key to continue/,
       insertPosition: "after",
     },
   });
 
-  // Register shortcuts for common actions
-  const removeShortcuts = [
-    process.registerShortcut({
-      key: "s",
-      handler: () => {
-        console.log("\nStarting server...");
-        process.stdin.write("1");
-      },
-      description: "Start server",
-    }),
-    process.registerShortcut({
-      key: "c",
-      handler: () => {
-        console.log("\nChecking status as shortcut...");
-        process.stdin.write("2");
-      },
-      description: "Check status",
-    }),
-    process.registerShortcut({
-      key: "l",
-      handler: () => {
-        console.log("\nShowing logs...");
-        process.stdin.write("3");
-      },
-      description: "Show logs",
-    }),
-  ];
+  // Register shortcuts
+  childProcess.registerShortcut({
+    key: "s",
+    handler: () => {
+      console.log("\nStarting server...");
+      childProcess.stdin.write("1");
+    },
+    description: "Start server",
+  });
 
-  // Register an output matcher to detect server start
-  const removeMatcher = process.registerOutputMatcher({
+  childProcess.registerShortcut({
+    key: "c",
+    handler: () => {
+      console.log("\nChecking status...");
+      childProcess.stdin.write("2");
+    },
+    description: "Check status",
+  });
+
+  childProcess.registerShortcut({
+    key: "l",
+    handler: () => {
+      console.log("\nShowing logs...");
+      childProcess.stdin.write("3");
+    },
+    description: "Show logs",
+  });
+
+  // Register output matchers
+  childProcess.registerOutputMatcher({
     pattern: /Server started successfully/,
     eventName: "serverStarted",
     context: {
@@ -52,14 +50,10 @@ async function main() {
     },
   });
 
-  // Listen for server start event
-  process.on("serverStarted", (data) => {
-    console.log("\nServer started!");
-    console.log("Context:", data.context);
+  // Listen for events
+  childProcess.on("serverStarted", (context) => {
+    console.log("Server started with context:", context);
   });
 
-  // Wait for the process to exit
-  await process.waitForExit();
+  return childProcess;
 }
-
-main().catch(console.error);

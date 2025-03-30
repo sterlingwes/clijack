@@ -1,51 +1,59 @@
 #!/bin/bash
 
+# Function to show menu
 show_menu() {
-  echo -e "\nAvailable commands:"
+  echo "Available commands:"
   echo "1. Start server"
   echo "2. Check status"
   echo "3. Show logs"
   echo "4. Exit"
-  echo -e "\nPress a key to continue..."
+  echo
+  echo "Press a key to continue..."
 }
 
-# Show initial menu
-show_menu
+# Function to start server
+start_server() {
+  echo "Starting server..."
+  sleep 1
+  echo "Server started successfully"
+}
 
-# Read input in a loop
+# Function to check status
+check_status() {
+  echo "Checking status..."
+  echo "Server is running"
+  echo "Uptime: 5 minutes"
+}
+
+# Function to show logs
+show_logs() {
+  echo "Showing logs..."
+  echo "[INFO] Server started"
+}
+
+# Main loop
 while true; do
-  # Read a single character silently (no need for Enter)
-  read -n 1 -s key
+  show_menu
+  read -n 1 input
+  echo
 
-  case $key in
+  case $input in
     1)
-      echo -e "\nStarting server..."
-      echo "Server started successfully!"
-      show_menu
+      start_server
       ;;
     2)
-      echo -e "\nChecking status..."
-      echo "Server is running"
-      echo "Uptime: 5 minutes"
-      show_menu
+      check_status
       ;;
     3)
-      echo -e "\nShowing logs..."
-      echo "[INFO] Server started"
-      echo "[INFO] Connected to database"
-      echo "[INFO] Listening on port 3000"
-      show_menu
+      show_logs
       ;;
     4)
-      echo -e "\nExiting..."
+      echo "Exiting..."
       exit 0
       ;;
     *)
-      # Only show menu for invalid input
-      if [[ -n "$key" ]]; then
-        echo -e "\nUnknown command: $key"
-        show_menu
-      fi
+      echo "Unknown command: $input"
       ;;
   esac
+  echo
 done 
