@@ -10,6 +10,10 @@ import {
 } from "./types";
 
 const maxBufferSize = 100;
+const defaultShortcutMenuOptions = {
+  title: "Available shortcuts:",
+  optionPrefix: "  ",
+};
 
 export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
   private shortcuts: Map<string, ShortcutConfig> = new Map();
@@ -127,6 +131,7 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
             match: [line] as RegExpMatchArray,
             context: { before: [], after: [], fullMatch: line },
           });
+          this.printShortcutsMenu();
         }
 
         for (const [pattern, matcher] of this.outputMatchers.entries()) {
@@ -217,5 +222,32 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
 
   isInteractiveProcess(): boolean {
     return this.isInteractive;
+  }
+
+  private printShortcutsMenu(): void {
+    if (this.shortcuts.size === 0 || !this.config.shortcutMenu) return;
+
+    let format = this.config.shortcutMenu;
+    if (format === true) {
+      format = defaultShortcutMenuOptions;
+    }
+
+    const title = format.title ?? defaultShortcutMenuOptions.title;
+    const optionPrefix =
+      format.optionPrefix ?? defaultShortcutMenuOptions.optionPrefix;
+
+    const menuText = [
+      `\n${title}`,
+      ...Array.from(this.shortcuts.entries()).map(
+        ([key, config]) => `${optionPrefix}${key}: ${config.description}`
+      ),
+      "",
+    ].join("\n");
+
+    if (this.config.menuMatcher?.insertPosition === "before") {
+      process.stdout.write(menuText);
+    } else {
+      console.log(menuText);
+    }
   }
 }

@@ -60,4 +60,8 @@ describe("base-interactive", () => {
     await harness.sendInput("4");
     await harness.waitForOutput(/Exiting/);
   });
+
+  it.only("should print registered shortcuts", () => {
+    console.log(harness.debugOutput);
+  });
 });

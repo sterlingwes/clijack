@@ -2,11 +2,16 @@ import { Readable, Writable } from "stream";
 
 export interface CommandConfig {
   command: string;
-  args: string[];
-  menuMatcher?: {
-    pattern: RegExp;
-    insertPosition: "before" | "after";
-  };
+  args?: string[];
+  cwd?: string;
+  env?: NodeJS.ProcessEnv;
+  menuMatcher?: Omit<OutputMatcher, "eventName">;
+  shortcutMenu?:
+    | {
+        title?: string;
+        optionPrefix?: string;
+      }
+    | boolean;
 }
 
 export interface ShortcutConfig {
@@ -25,6 +30,7 @@ export interface OutputMatcher {
     maxBufferSize?: number;
   };
   once?: boolean;
+  insertPosition?: "before" | "after";
 }
 
 export interface MatchData {

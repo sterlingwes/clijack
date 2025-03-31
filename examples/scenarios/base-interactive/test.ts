@@ -8,7 +8,11 @@ export async function main() {
     args: [path.join(__dirname, "cli.sh")],
     menuMatcher: {
       pattern: /Press a key to continue/,
-      insertPosition: "after",
+      insertPosition: "before",
+    },
+    shortcutMenu: {
+      title: "",
+      optionPrefix: "",
     },
   });
 
@@ -46,6 +50,10 @@ export async function main() {
       linesBefore: 2,
       linesAfter: 2,
     },
+  });
+
+  childProcess.on("interactive", (context) => {
+    console.log("Interactive mode:", context);
   });
 
   childProcess.on("serverStarted", (context) => {
