@@ -1,7 +1,7 @@
 import { CLITestHarness } from "./helpers";
 import path from "path";
 
-describe("CLI Tests", () => {
+describe("base-interactive", () => {
   let harness: CLITestHarness;
 
   beforeEach(async () => {

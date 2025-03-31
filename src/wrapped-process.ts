@@ -9,6 +9,8 @@ import {
   MatchData,
 } from "./types";
 
+const maxBufferSize = 100;
+
 export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
   private shortcuts: Map<string, ShortcutConfig> = new Map();
   private outputMatchers: Map<RegExp, OutputMatcher> = new Map();
@@ -98,7 +100,7 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
         if (!line.trim()) continue;
 
         this.outputBuffer.push(line);
-        if (this.outputBuffer.length > 100) {
+        if (this.outputBuffer.length > maxBufferSize) {
           this.outputBuffer.shift();
         }
 
@@ -131,7 +133,13 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
   private getContext(config?: OutputMatcher["context"]): MatchData["context"] {
     const before = config?.linesBefore ?? 0;
     const after = config?.linesAfter ?? 0;
-    const maxSize = config?.maxBufferSize ?? 100;
+    const totalContext = before + after;
+
+    if (totalContext > maxBufferSize) {
+      console.warn(
+        `Warning: Requested ${totalContext} total lines of context (${before} before, ${after} after) but buffer only retains ${maxBufferSize} lines`
+      );
+    }
 
     const currentIndex = this.outputBuffer.length - 1;
     const startIndex = Math.max(0, currentIndex - before);
