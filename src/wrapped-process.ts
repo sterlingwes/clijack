@@ -112,7 +112,7 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
 
     const handleOutput = (data: Buffer, isError: boolean) => {
       const output = data.toString();
-      const lines = output.split("\n");
+      const lines = output.split(/\r?\n/);
 
       for (const line of lines) {
         if (!line.trim()) continue;

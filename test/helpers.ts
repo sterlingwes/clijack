@@ -1,49 +1,57 @@
 import { EventEmitter } from "events";
-import * as os from "os";
-import * as pty from "node-pty";
+import { spawn } from "child_process";
 
 export class CLITestHarness extends EventEmitter {
   private output: string[] = [];
-  private term: pty.IPty | null = null;
-
-  constructor() {
-    super();
-  }
+  private childProcess: ReturnType<typeof spawn> | null = null;
 
   get debugOutput(): string[] {
     return this.output;
   }
 
   async startCLI(entryPoint: string, readyPattern: RegExp): Promise<void> {
-    this.term = pty.spawn("node", [entryPoint], {
+    this.childProcess = spawn("node", ["-i", entryPoint], {
+      stdio: ["pipe", "pipe", "pipe"],
       cwd: process.cwd(),
+      shell: true,
+      env: {
+        ...process.env,
+        FORCE_COLOR: "1",
+        NODE_NO_READLINE: "0",
+        NODE_TTY_REPL_MODE: "1",
+      },
     });
 
     this.output = [];
     let buffer = "";
 
-    this.term.onData((data: string) => {
-      buffer += data;
+    if (!this.childProcess.stdout || !this.childProcess.stderr) {
+      throw new Error("Failed to create child process streams");
+    }
 
-      const lines = buffer.split("\r\n");
+    const handleOutput = (data: Buffer) => {
+      buffer += data.toString();
+
+      const lines = buffer.split(/\r?\n/);
       buffer = lines.pop() || "";
 
       for (const line of lines) {
-        if (line.trim()) {
-          this.output.push(line.trim());
-          this.emit("output", line.trim());
-        }
+        this.output.push(line);
+        this.emit("output", line);
       }
-    });
+    };
+
+    this.childProcess.stdout.on("data", handleOutput);
+    this.childProcess.stderr.on("data", handleOutput);
 
     await this.waitForOutput(readyPattern);
   }
 
   async sendInput(input: string): Promise<void> {
-    if (!this.term) {
+    if (!this.childProcess?.stdin) {
       throw new Error("No terminal running");
     }
-    this.term.write(input);
+    this.childProcess.stdin.write(input);
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
@@ -87,8 +95,8 @@ export class CLITestHarness extends EventEmitter {
   }
 
   async cleanup(): Promise<void> {
-    if (this.term) {
-      this.term.kill();
+    if (this.childProcess) {
+      this.childProcess.kill();
     }
   }
 }

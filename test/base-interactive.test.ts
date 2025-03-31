@@ -61,7 +61,7 @@ describe("base-interactive", () => {
     await harness.waitForOutput(/Exiting/);
   });
 
-  it.only("should print registered shortcuts", () => {
+  it.skip("should print registered shortcuts", () => {
     console.log(harness.debugOutput);
   });
 });
