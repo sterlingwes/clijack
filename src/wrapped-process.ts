@@ -14,7 +14,13 @@ const maxBufferSize = 100;
 export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
   private shortcuts: Map<string, ShortcutConfig> = new Map();
   private outputMatchers: Map<RegExp, OutputMatcher> = new Map();
-  private outputBuffer: string[] = [];
+  private readonly outputBuffer: string[] = [];
+  private readonly matchers: OutputMatcher[] = [];
+  private readonly pendingMatches: {
+    matcher: OutputMatcher;
+    match: string;
+    index: number;
+  }[] = [];
   private exitPromise: Promise<void> | null = null;
   private exitResolve: (() => void) | null = null;
   private childProcess: ChildProcess;
@@ -31,6 +37,14 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
     });
 
     this.childProcess.on("exit", () => {
+      for (const pending of this.pendingMatches) {
+        const context = this.getContext(pending.matcher.context);
+        this.emit(pending.matcher.eventName, {
+          match: [pending.match],
+          context,
+        });
+      }
+      this.pendingMatches.length = 0;
       this.exitResolve?.();
     });
 
@@ -102,6 +116,9 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
         this.outputBuffer.push(line);
         if (this.outputBuffer.length > maxBufferSize) {
           this.outputBuffer.shift();
+          for (const pending of this.pendingMatches) {
+            pending.index = Math.max(0, pending.index - 1);
+          }
         }
 
         if (this.config.menuMatcher?.pattern.test(line)) {
@@ -115,19 +132,58 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
         for (const [pattern, matcher] of this.outputMatchers.entries()) {
           const match = line.match(pattern);
           if (match) {
-            const context = this.getContext(matcher.context);
-            this.emit(matcher.eventName, { match, context });
+            if (matcher.context?.linesAfter) {
+              const linesAfter = matcher.context.linesAfter;
+              if (this.outputBuffer.length + linesAfter <= maxBufferSize) {
+                this.pendingMatches.push({
+                  matcher,
+                  match: match[0],
+                  index: this.outputBuffer.length - 1,
+                });
+              } else {
+                console.warn(
+                  `Warning: Skipping match for ${
+                    matcher.eventName
+                  } - requested ${linesAfter} lines of after context but only ${
+                    maxBufferSize - this.outputBuffer.length
+                  } lines available in buffer`
+                );
+              }
+            } else {
+              const context = this.getContext(matcher.context);
+              this.emit(matcher.eventName, { match, context });
 
-            if (matcher.once) {
-              this.outputMatchers.delete(pattern);
+              if (matcher.once) {
+                this.outputMatchers.delete(pattern);
+              }
             }
           }
         }
       }
+
+      this.checkPendingMatches();
     };
 
     this.childProcess.stdout.on("data", (data) => handleOutput(data, false));
     this.childProcess.stderr.on("data", (data) => handleOutput(data, true));
+  }
+
+  private checkPendingMatches(): void {
+    const currentIndex = this.outputBuffer.length - 1;
+    for (let i = this.pendingMatches.length - 1; i >= 0; i--) {
+      const pending = this.pendingMatches[i];
+      const linesAfter = pending.matcher.context?.linesAfter ?? 0;
+      const hasEnoughContext = currentIndex - pending.index >= linesAfter;
+
+      if (hasEnoughContext) {
+        const context = this.getContext(pending.matcher.context);
+        this.emit(pending.matcher.eventName, {
+          match: [pending.match],
+          context,
+        });
+        this.pendingMatches.splice(i, 1);
+      }
+    }
   }
 
   private getContext(config?: OutputMatcher["context"]): MatchData["context"] {

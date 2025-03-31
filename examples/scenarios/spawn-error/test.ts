@@ -17,8 +17,13 @@ export async function main() {
     },
   });
 
-  childProcess.on("specificError", (context) => {
-    console.log("Specific error matched with context:", context);
+  childProcess.on("specificError", ({ context }) => {
+    console.log("<specificError>");
+    console.log("Specific error matched with context");
+    console.log("Before:", JSON.stringify(context.before));
+    console.log("After:", JSON.stringify(context.after));
+    console.log("Full match:", JSON.stringify(context.fullMatch));
+    console.log("</specificError>");
   });
 
   return childProcess;

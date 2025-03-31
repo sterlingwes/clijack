@@ -10,6 +10,10 @@ export class CLITestHarness extends EventEmitter {
     super();
   }
 
+  get debugOutput(): string[] {
+    return this.output;
+  }
+
   async startCLI(entryPoint: string, readyPattern: RegExp): Promise<void> {
     this.term = pty.spawn("node", [entryPoint], {
       cwd: process.cwd(),
@@ -66,8 +70,10 @@ export class CLITestHarness extends EventEmitter {
     });
   }
 
-  async assertOutput(pattern: RegExp): Promise<void> {
-    const found = this.output.some((line) => pattern.test(line));
+  async assertOutput(pattern: RegExp | string): Promise<void> {
+    const found = this.output.some((line) =>
+      typeof pattern === "string" ? line.includes(pattern) : pattern.test(line)
+    );
     if (!found) {
       throw new Error(`Expected output matching ${pattern} but found none`);
     }
