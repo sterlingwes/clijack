@@ -26,12 +26,12 @@ describe("spawn-error", () => {
 
   it("should capture specific error", async () => {
     await harness.assertOutput(/Specific error matched with context/);
+    await harness.assertOutput('Before: ["This is a test error"]');
     await harness.assertOutput(
-      'Before: ["This is a test error","Something happened and this is the error message"]'
+      'After: ["This is the end of the error message"]'
     );
-    await harness.assertOutput("After: []");
     await harness.assertOutput(
-      'Full match: "This is the end of the error message"'
+      'Full match: "Something happened and this is the error message"'
     );
   });
 });

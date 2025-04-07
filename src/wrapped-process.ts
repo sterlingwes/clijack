@@ -19,7 +19,6 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
   private shortcuts: Map<string, ShortcutConfig> = new Map();
   private outputMatchers: Map<RegExp, OutputMatcher> = new Map();
   private readonly outputBuffer: string[] = [];
-  private readonly matchers: OutputMatcher[] = [];
   private readonly pendingMatches: {
     matcher: OutputMatcher;
     match: string;
@@ -42,7 +41,7 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
 
     this.childProcess.on("exit", () => {
       for (const pending of this.pendingMatches) {
-        const context = this.getContext(pending.matcher.context);
+        const context = this.getContext(pending.matcher.context, pending.index);
         this.emit(pending.matcher.eventName, {
           match: [pending.match],
           context,
@@ -191,7 +190,10 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
     }
   }
 
-  private getContext(config?: OutputMatcher["context"]): MatchData["context"] {
+  private getContext(
+    config?: OutputMatcher["context"],
+    matchIndex?: number
+  ): MatchData["context"] {
     const before = config?.linesBefore ?? 0;
     const after = config?.linesAfter ?? 0;
     const totalContext = before + after;
@@ -202,7 +204,7 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
       );
     }
 
-    const currentIndex = this.outputBuffer.length - 1;
+    const currentIndex = matchIndex ?? this.outputBuffer.length - 1;
     const startIndex = Math.max(0, currentIndex - before);
     const endIndex = Math.min(
       this.outputBuffer.length,
