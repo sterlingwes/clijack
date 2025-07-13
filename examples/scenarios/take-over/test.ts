@@ -22,17 +22,14 @@ export async function main() {
       const name = await wrapper.withFullscreenPrompt<string>((api) => {
         api.write("What is your name?\n");
         let input = "";
-        api.onInput(
-          (key) => {
-            if (key === "\r") {
-              api.resolve(input);
-            } else {
-              input += key;
-              api.write(key);
-            }
-          },
-          { intermediates: true }
-        );
+        api.onInput((key) => {
+          if (key === "\r") {
+            api.resolve(input);
+          } else {
+            input += key;
+            api.write(key);
+          }
+        });
       });
       console.log(`\nUser's name is: ${name}`);
       process.exit(0);

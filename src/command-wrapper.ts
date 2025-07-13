@@ -99,7 +99,7 @@ export class CommandWrapper {
       write: (data: string) => void;
       onInput: (
         handler: (data: string) => void,
-        options?: { intermediates?: boolean }
+        options?: { resolveOnEnter?: boolean }
       ) => void;
       promptInput: () => Promise<string>;
       resolve: (value: T) => void;
@@ -130,9 +130,9 @@ export class CommandWrapper {
 
       const setInputHandler = (
         handler: (data: string) => void,
-        options?: { intermediates?: boolean }
+        options?: { resolveOnEnter?: boolean }
       ) => {
-        if (options?.intermediates) {
+        if (!options?.resolveOnEnter) {
           this.takeoverInputHandler = (key: string) => handler(key);
         } else {
           this.takeoverInputHandler = (key: string) => {

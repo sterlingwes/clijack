@@ -171,6 +171,20 @@ process.registerShortcut({
 });
 ```
 
+The `onInput` handler is called for each input in a sequence like for each key press. If you only care about the final result after a user hits Enter you can simplify:
+
+```typescript
+const nameAndFeelings = await wrapper.withFullscreenPrompt<string>(
+  async (api) => {
+    api.write("What is your name?\n");
+    const name = await api.promptInput();
+    api.write(`Hello ${name}, how are you today?\n`);
+    const feelings = await api.promptInput();
+    api.resolve({ name, feelings });
+  }
+);
+```
+
 **How it works:**
 
 - When `withFullscreenPrompt` is called, clijack switches to the alternate screen buffer and captures all input.
