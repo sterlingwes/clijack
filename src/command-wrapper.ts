@@ -6,6 +6,11 @@ import { WrappedProcessImpl } from "./wrapped-process";
 const enterAltScreen = "\x1b[?1049h";
 const exitAltScreen = "\x1b[?1049l";
 const clearScreen = "\x1b[2J\x1b[0;0H";
+const ctrlC = "\u0003";
+const backspaceKey = "\b";
+const deleteKey = "\u007f";
+const carriageReturn = "\r";
+const linebreak = "\n";
 
 export class CommandWrapper {
   private processes: Map<string, WrappedProcessImpl> = new Map();
@@ -92,7 +97,11 @@ export class CommandWrapper {
   async withFullscreenPrompt<T>(
     render: (api: {
       write: (data: string) => void;
-      onInput: (handler: (data: string) => void) => void;
+      onInput: (
+        handler: (data: string) => void,
+        options?: { intermediates?: boolean }
+      ) => void;
+      promptInput: () => Promise<string>;
       resolve: (value: T) => void;
     }) => void
   ): Promise<T> {
@@ -117,12 +126,51 @@ export class CommandWrapper {
       process.stdout.write(enterAltScreen);
       process.stdout.write(clearScreen);
 
+      let inputBuffer = "";
+
+      const setInputHandler = (
+        handler: (data: string) => void,
+        options?: { intermediates?: boolean }
+      ) => {
+        if (options?.intermediates) {
+          this.takeoverInputHandler = (key: string) => handler(key);
+        } else {
+          this.takeoverInputHandler = (key: string) => {
+            if (key === carriageReturn) {
+              process.stdout.write(linebreak);
+              handler(inputBuffer);
+              inputBuffer = "";
+              this.takeoverInputHandler = null;
+            } else if (key === ctrlC) {
+              cleanup(Promise.reject(new Error("Cancelled")) as any);
+            } else if (key === deleteKey || key === backspaceKey) {
+              // Handle backspaces by amending buffer
+              if (inputBuffer.length > 0) {
+                inputBuffer = inputBuffer.slice(0, -1);
+                process.stdout.write("\b \b");
+              }
+            } else if (key.length === 1 && key >= " ") {
+              inputBuffer += key;
+              process.stdout.write(key);
+            }
+          };
+        }
+      };
+
+      const awaitableInputHandler = () => {
+        return new Promise<string>((resolve) => {
+          setInputHandler((data: string) => {
+            resolve(data);
+            inputBuffer = "";
+          });
+        });
+      };
+
       try {
         render({
           write: (data: string) => process.stdout.write(data),
-          onInput: (handler: (data: string) => void) => {
-            this.takeoverInputHandler = handler;
-          },
+          onInput: setInputHandler,
+          promptInput: awaitableInputHandler,
           resolve: (value: T) => cleanup(value),
         });
       } catch (error) {
