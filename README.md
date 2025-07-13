@@ -19,6 +19,8 @@ npm install clijack
 
 ## Usage
 
+The initial use case for this library was to wrap [Expo](https://expo.dev)'s start CLI, which has interactive elements, with extended use cases applicable to a team using it. Some of the examples noted here reference this.
+
 ### Basic Setup
 
 ```typescript
@@ -171,7 +173,6 @@ The main class for managing command processes.
 #### Methods
 
 - `spawn(config: CommandConfig): WrappedProcess`
-
   - Spawn a new command process
   - `config.command`: The command to execute
   - `config.args`: Command arguments
@@ -189,7 +190,6 @@ Represents a spawned command process.
 #### Methods
 
 - `registerShortcut(config: ShortcutConfig): () => void`
-
   - Register a shortcut for this process
   - Returns a function to remove the shortcut
   - `config.key`: The key to trigger the shortcut
@@ -198,7 +198,6 @@ Represents a spawned command process.
   - `config.description`: Optional description for help/UI
 
 - `registerOutputMatcher(config: OutputMatcher): () => void`
-
   - Register an output matcher
   - Returns a function to remove the matcher
   - `config.pattern`: Regex to match against output
@@ -207,11 +206,9 @@ Represents a spawned command process.
   - `config.once`: Whether to remove matcher after first match
 
 - `on(event: string, handler: (data: MatchData) => void): void`
-
   - Listen for events (including output matcher events)
 
 - `kill(signal?: string): void`
-
   - Kill the process
 
 - `waitForExit(): Promise<void>`
