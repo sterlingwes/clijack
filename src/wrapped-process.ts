@@ -28,6 +28,7 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
   readonly pty: IPty;
   protected config: CommandConfig;
   private isInteractive: boolean = false;
+  private isOutputSuspended = false;
 
   constructor(ptyProcess: IPty, config: CommandConfig) {
     super();
@@ -51,6 +52,14 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
     });
 
     this.setupOutputHandling();
+  }
+
+  suspendOutput(): void {
+    this.isOutputSuspended = true;
+  }
+
+  resumeOutput(): void {
+    this.isOutputSuspended = false;
   }
 
   kill(signal?: string): void {
@@ -82,7 +91,11 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
 
   private setupOutputHandling(): void {
     this.pty.onData((data) => {
-      process.stdout.write(data);
+      if (!this.isOutputSuspended) {
+        process.stdout.write(data);
+      }
+
+      // Process the output for matchers
       const output = data.toString();
       const lines = output.split(/\r?\n/);
 

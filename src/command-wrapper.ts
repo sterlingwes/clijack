@@ -1,10 +1,17 @@
-import { spawn } from "node-pty";
+import { IPty, spawn } from "node-pty";
 import { CommandConfig, WrappedProcess } from "./types";
 import { WrappedProcessImpl } from "./wrapped-process";
+
+// ANSI escape codes for alternate screen buffer
+const enterAltScreen = "\x1b[?1049h";
+const exitAltScreen = "\x1b[?1049l";
+const clearScreen = "\x1b[2J\x1b[0;0H";
 
 export class CommandWrapper {
   private processes: Map<string, WrappedProcessImpl> = new Map();
   private interactiveProcess: WrappedProcessImpl | null = null;
+  private isTakingOver = false;
+  private takeoverKeyHandler: ((key: string) => void) | null = null;
 
   constructor() {
     // Set up raw mode for stdin to handle keypresses
@@ -20,6 +27,11 @@ export class CommandWrapper {
       if (key === "\u0003") {
         this.killAll();
         process.exit();
+      }
+
+      if (this.isTakingOver && this.takeoverKeyHandler) {
+        this.takeoverKeyHandler(key);
+        return;
       }
 
       // Forward input to interactive process if exists
@@ -77,8 +89,45 @@ export class CommandWrapper {
     process.stdin.pause();
   }
 
-  takeOverOutput(render: () => void): void {
-    // TODO: Implement terminal output takeover
-    render();
+  async takeOverOutput<T>(
+    render: (api: {
+      write: (data: string) => void;
+      onKeyPress: (handler: (key: string) => void) => void;
+      resolve: (value: T) => void;
+    }) => void
+  ): Promise<T> {
+    if (!this.interactiveProcess) {
+      throw new Error(
+        "Cannot take over output without an interactive process."
+      );
+    }
+
+    this.isTakingOver = true;
+    this.interactiveProcess.suspendOutput();
+
+    return new Promise<T>((resolve) => {
+      const cleanup = (value: T) => {
+        process.stdout.write(exitAltScreen);
+        this.takeoverKeyHandler = null;
+        this.interactiveProcess?.resumeOutput();
+        this.isTakingOver = false;
+        resolve(value);
+      };
+
+      process.stdout.write(enterAltScreen);
+      process.stdout.write(clearScreen);
+
+      try {
+        render({
+          write: (data: string) => process.stdout.write(data),
+          onKeyPress: (handler: (key: string) => void) => {
+            this.takeoverKeyHandler = handler;
+          },
+          resolve: (value: T) => cleanup(value),
+        });
+      } catch (error) {
+        cleanup(Promise.reject(error) as any);
+      }
+    });
   }
 }

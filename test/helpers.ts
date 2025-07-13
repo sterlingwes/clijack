@@ -4,21 +4,19 @@ import { spawn } from "child_process";
 export class CLITestHarness extends EventEmitter {
   private output: string[] = [];
   private childProcess: ReturnType<typeof spawn> | null = null;
+  private isAltScreen = false;
 
   get debugOutput(): string[] {
     return this.output;
   }
 
-  async startCLI(entryPoint: string, readyPattern: RegExp): Promise<void> {
-    this.childProcess = spawn("node", ["-i", entryPoint], {
+  async startCLI(entryPoint: string, readyPattern?: RegExp): Promise<void> {
+    this.childProcess = spawn("node", [entryPoint], {
       stdio: ["pipe", "pipe", "pipe"],
       cwd: process.cwd(),
-      shell: true,
       env: {
         ...process.env,
         FORCE_COLOR: "1",
-        NODE_NO_READLINE: "0",
-        NODE_TTY_REPL_MODE: "1",
       },
     });
 
@@ -30,6 +28,17 @@ export class CLITestHarness extends EventEmitter {
     }
 
     const handleOutput = (data: Buffer) => {
+      const dataStr = data.toString();
+      if (dataStr.includes("\x1b[?1049h")) {
+        this.isAltScreen = true;
+        this.output = [];
+        this.emit("alt-screen-enter");
+      } else if (dataStr.includes("\x1b[?1049l")) {
+        this.isAltScreen = false;
+        this.output = [];
+        this.emit("alt-screen-exit");
+      }
+
       buffer += data.toString();
 
       const lines = buffer.split(/\r?\n/);
@@ -44,7 +53,9 @@ export class CLITestHarness extends EventEmitter {
     this.childProcess.stdout.on("data", handleOutput);
     this.childProcess.stderr.on("data", handleOutput);
 
-    await this.waitForOutput(readyPattern);
+    if (readyPattern) {
+      await this.waitForOutput(readyPattern);
+    }
   }
 
   async sendInput(input: string): Promise<void> {

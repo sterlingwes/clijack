@@ -11,6 +11,7 @@
     "build": "tsc && ./test/setup.sh",
     "test": "npm run build && jest",
     "ex:base-interactive": "npm run build && node dist/examples/scenarios/base-interactive/run.js",
+    "ex:take-over": "npm run build && node dist/examples/scenarios/take-over/run.js",
     "clean": "rm -rf dist"
   },
   "keywords": [],
