@@ -52,12 +52,8 @@ export async function main() {
     },
   });
 
-  childProcess.on("interactive", (context) => {
-    console.log("Interactive mode:", context);
-  });
-
   childProcess.on("serverStarted", (context) => {
-    console.log("Server started with context:", context);
+    console.log("Server started event received!");
   });
 
   return childProcess;

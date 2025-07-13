@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc && ./test/setup.sh",
     "test": "npm run build && jest",
-    "test:base-interactive": "node dist/examples/scenarios/base-interactive/run.js",
+    "ex:base-interactive": "npm run build && node dist/examples/scenarios/base-interactive/run.js",
     "clean": "rm -rf dist"
   },
   "keywords": [],

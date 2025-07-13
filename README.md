@@ -218,6 +218,12 @@ Represents a spawned command process.
   - Wait for the process to complete
   - Returns a promise that resolves when the process exits
 
+## Contributing
+
+### Tests
+
+The tests run against scenarios under the examples folder. You can run the scenarios manually for interactive testing and via the jest-based test harness.
+
 ## Requirements
 
 - Node.js v20 or higher

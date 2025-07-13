@@ -16,7 +16,7 @@ describe("base-interactive", () => {
         "base-interactive",
         "run.js"
       ),
-      /Press a key to continue/
+      /l: Show logs/
     );
   });
 
@@ -61,7 +61,9 @@ describe("base-interactive", () => {
     await harness.waitForOutput(/Exiting/);
   });
 
-  it.skip("should print registered shortcuts", () => {
-    console.log(harness.debugOutput);
+  it("should print registered shortcuts", async () => {
+    await harness.waitForOutput(/s: Start server/);
+    await harness.waitForOutput(/c: Check status/);
+    await harness.waitForOutput(/l: Show logs/);
   });
 });
