@@ -11,7 +11,7 @@ export class CommandWrapper {
   private processes: Map<string, WrappedProcessImpl> = new Map();
   private interactiveProcess: WrappedProcessImpl | null = null;
   private isTakingOver = false;
-  private takeoverKeyHandler: ((key: string) => void) | null = null;
+  private takeoverInputHandler: ((data: string) => void) | null = null;
 
   constructor() {
     // Set up raw mode for stdin to handle keypresses
@@ -29,8 +29,8 @@ export class CommandWrapper {
         process.exit();
       }
 
-      if (this.isTakingOver && this.takeoverKeyHandler) {
-        this.takeoverKeyHandler(key);
+      if (this.isTakingOver && this.takeoverInputHandler) {
+        this.takeoverInputHandler(key);
         return;
       }
 
@@ -89,10 +89,10 @@ export class CommandWrapper {
     process.stdin.pause();
   }
 
-  async takeOverOutput<T>(
+  async withFullscreenPrompt<T>(
     render: (api: {
       write: (data: string) => void;
-      onKeyPress: (handler: (key: string) => void) => void;
+      onInput: (handler: (data: string) => void) => void;
       resolve: (value: T) => void;
     }) => void
   ): Promise<T> {
@@ -108,7 +108,7 @@ export class CommandWrapper {
     return new Promise<T>((resolve) => {
       const cleanup = (value: T) => {
         process.stdout.write(exitAltScreen);
-        this.takeoverKeyHandler = null;
+        this.takeoverInputHandler = null;
         this.interactiveProcess?.resumeOutput();
         this.isTakingOver = false;
         resolve(value);
@@ -120,8 +120,8 @@ export class CommandWrapper {
       try {
         render({
           write: (data: string) => process.stdout.write(data),
-          onKeyPress: (handler: (key: string) => void) => {
-            this.takeoverKeyHandler = handler;
+          onInput: (handler: (data: string) => void) => {
+            this.takeoverInputHandler = handler;
           },
           resolve: (value: T) => cleanup(value),
         });

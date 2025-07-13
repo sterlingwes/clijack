@@ -137,9 +137,9 @@ process.on("issuesFound", (data) => {
 });
 ```
 
-### Taking Over Terminal Output
+### Full screen prompt takeover
 
-You can temporarily take over the terminal output for custom UI elements:
+You can temporarily take over the terminal for custom prompts:
 
 ```typescript
 const wrapper = new CommandWrapper();
@@ -150,19 +150,37 @@ const process = wrapper.spawn({
 });
 
 process.registerShortcut({
-  key: "l",
-  handler: () => {
-    wrapper.takeOverOutput(() => {
-      // Render custom UI
-      console.log("Select a device:");
-      console.log("1. iPhone 14 Pro");
-      console.log("2. iPhone 15 Pro");
-      // ... handle selection
+  key: "t",
+  handler: async () => {
+    // Enter takeover mode (alternate screen)
+    const name = await wrapper.withFullscreenPrompt<string>((api) => {
+      api.write("What is your name?\n");
+      let input = "";
+      api.onInput((key) => {
+        if (key === "\r") {
+          api.resolve(input); // Finish takeover and return value
+        } else {
+          input += key;
+          api.write(key); // Echo input
+        }
+      });
     });
+    console.log(`\nUser's name is: ${name}`);
   },
-  description: "List available devices",
+  description: "Take over output",
 });
 ```
+
+**How it works:**
+
+- When `withFullscreenPrompt` is called, clijack switches to the alternate screen buffer and captures all input.
+- Your handler receives an `api` object with:
+  - `write(text: string)`: Write output to the terminal.
+  - `onInput(handler: (data: string) => void)`: Listen for input events (ie. individual key presses).
+  - `resolve(value: T)`: Exit takeover mode and return a value.
+- While in takeover mode, keyboard input and output are isolated from the underlying process.
+
+See the API docs
 
 ## API Reference
 

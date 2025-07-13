@@ -19,10 +19,10 @@ export async function main() {
   childProcess.registerShortcut({
     key: "t",
     handler: async () => {
-      const name = await wrapper.takeOverOutput<string>((api) => {
+      const name = await wrapper.withFullscreenPrompt<string>((api) => {
         api.write("What is your name?\n");
         let input = "";
-        api.onKeyPress((key) => {
+        api.onInput((key) => {
           if (key === "\r") {
             api.resolve(input);
           } else {
@@ -34,7 +34,7 @@ export async function main() {
       console.log(`\nUser's name is: ${name}`);
       process.exit(0);
     },
-    description: "Take over output",
+    description: "Take over input",
   });
 
   return childProcess;
