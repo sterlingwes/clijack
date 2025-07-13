@@ -1,4 +1,4 @@
-import { Readable, Writable } from "stream";
+import { IPty } from "node-pty";
 
 export interface CommandConfig {
   command: string;
@@ -43,14 +43,9 @@ export interface MatchData {
 }
 
 export interface WrappedProcess {
-  stdout: Readable;
-  stderr: Readable;
-  stdin: Writable;
-  kill(signal?: NodeJS.Signals): void;
-  on(
-    event: "error" | "exit" | string,
-    handler: (data: MatchData) => void
-  ): void;
+  pty: IPty;
+  kill(signal?: string): void;
+  on(event: "exit" | string, handler: (data: MatchData) => void): void;
   registerShortcut(config: ShortcutConfig): () => void;
   registerOutputMatcher(config: OutputMatcher): () => void;
   waitForExit(): Promise<void>;

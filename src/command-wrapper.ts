@@ -1,4 +1,4 @@
-import { spawn, ChildProcess } from "child_process";
+import { spawn } from "node-pty";
 import { CommandConfig, WrappedProcess } from "./types";
 import { WrappedProcessImpl } from "./wrapped-process";
 
@@ -30,19 +30,23 @@ export class CommandWrapper {
           shortcut.handler();
         } else {
           // If not a shortcut, forward to the process
-          this.interactiveProcess.stdin.write(key);
+          this.interactiveProcess.pty.write(key);
         }
       }
     });
   }
 
   spawn(config: CommandConfig): WrappedProcess {
-    const process = spawn(config.command, config.args, {
-      stdio: ["pipe", "pipe", "pipe"],
+    const ptyProcess = spawn(config.command, config.args ?? [], {
+      name: "xterm-color",
+      cols: process.stdout.columns,
+      rows: process.stdout.rows,
+      cwd: process.cwd(),
+      env: process.env as { [key: string]: string },
     });
 
-    const wrappedProcess = new WrappedProcessImpl(process, config);
-    this.processes.set(process.pid?.toString() ?? "unknown", wrappedProcess);
+    const wrappedProcess = new WrappedProcessImpl(ptyProcess, config);
+    this.processes.set(ptyProcess.pid.toString(), wrappedProcess);
 
     // Listen for interactive event
     wrappedProcess.on("interactive", () => {
@@ -50,7 +54,7 @@ export class CommandWrapper {
     });
 
     // Handle process cleanup
-    process.on("exit", () => {
+    ptyProcess.onExit(() => {
       if (this.interactiveProcess === wrappedProcess) {
         // Find the most recently spawned process that is interactive
         this.interactiveProcess =
@@ -58,7 +62,7 @@ export class CommandWrapper {
             .filter((p) => p !== wrappedProcess && p.isInteractiveProcess())
             .pop() ?? null;
       }
-      this.processes.delete(process.pid?.toString() ?? "unknown");
+      this.processes.delete(ptyProcess.pid.toString());
     });
 
     return wrappedProcess;

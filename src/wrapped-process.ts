@@ -1,5 +1,4 @@
-import { ChildProcess } from "child_process";
-import { Readable, Writable } from "stream";
+import { IPty } from "node-pty";
 import { EventEmitter } from "events";
 import {
   CommandConfig,
@@ -26,20 +25,20 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
   }[] = [];
   private exitPromise: Promise<void> | null = null;
   private exitResolve: (() => void) | null = null;
-  private childProcess: ChildProcess;
+  readonly pty: IPty;
   protected config: CommandConfig;
   private isInteractive: boolean = false;
 
-  constructor(childProcess: ChildProcess, config: CommandConfig) {
+  constructor(ptyProcess: IPty, config: CommandConfig) {
     super();
-    this.childProcess = childProcess;
+    this.pty = ptyProcess;
     this.config = config;
 
     this.exitPromise = new Promise((resolve) => {
       this.exitResolve = resolve;
     });
 
-    this.childProcess.on("exit", () => {
+    this.pty.onExit(() => {
       for (const pending of this.pendingMatches) {
         const context = this.getContext(pending.matcher.context, pending.index);
         this.emit(pending.matcher.eventName, {
@@ -51,36 +50,14 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
       this.exitResolve?.();
     });
 
-    this.childProcess.on("error", (error) => {
-      super.emit("error", {
-        match: [error.message] as RegExpMatchArray,
-        context: { before: [], after: [], fullMatch: error.message },
-      });
-    });
-
     this.setupOutputHandling();
   }
 
-  get stdout(): Readable {
-    return this.childProcess.stdout as Readable;
+  kill(signal?: string): void {
+    this.pty.kill(signal);
   }
 
-  get stderr(): Readable {
-    return this.childProcess.stderr as Readable;
-  }
-
-  get stdin(): Writable {
-    return this.childProcess.stdin as Writable;
-  }
-
-  kill(signal?: NodeJS.Signals): void {
-    this.childProcess.kill(signal);
-  }
-
-  on(
-    event: "error" | "exit" | string,
-    handler: (data: MatchData) => void
-  ): this {
+  on(event: "exit" | string, handler: (data: MatchData) => void): this {
     super.on(event, handler);
     return this;
   }
@@ -104,12 +81,8 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
   }
 
   private setupOutputHandling(): void {
-    if (!this.childProcess.stdout || !this.childProcess.stderr) return;
-
-    this.childProcess.stdout.pipe(process.stdout);
-    this.childProcess.stderr.pipe(process.stderr);
-
-    const handleOutput = (data: Buffer, isError: boolean) => {
+    this.pty.onData((data) => {
+      process.stdout.write(data);
       const output = data.toString();
       const lines = output.split(/\r?\n/);
 
@@ -146,11 +119,7 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
                 });
               } else {
                 console.warn(
-                  `Warning: Skipping match for ${
-                    matcher.eventName
-                  } - requested ${linesAfter} lines of after context but only ${
-                    maxBufferSize - this.outputBuffer.length
-                  } lines available in buffer`
+                  `Warning: Skipping match for ${matcher.eventName} - requested ${linesAfter} lines of after context but only ${maxBufferSize - this.outputBuffer.length} lines available in buffer`
                 );
               }
             } else {
@@ -166,10 +135,7 @@ export class WrappedProcessImpl extends EventEmitter implements WrappedProcess {
       }
 
       this.checkPendingMatches();
-    };
-
-    this.childProcess.stdout.on("data", (data) => handleOutput(data, false));
-    this.childProcess.stderr.on("data", (data) => handleOutput(data, true));
+    });
   }
 
   private checkPendingMatches(): void {

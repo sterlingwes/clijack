@@ -11,8 +11,8 @@ export async function main() {
       insertPosition: "before",
     },
     shortcutMenu: {
-      title: "",
-      optionPrefix: "",
+      title: "Custom Shortcuts:",
+      optionPrefix: "  ",
     },
   });
 
@@ -20,7 +20,7 @@ export async function main() {
     key: "s",
     handler: () => {
       console.log("\nStarting server via shortcut...");
-      childProcess.stdin.write("1");
+      childProcess.pty.write("1");
     },
     description: "Start server",
   });
@@ -29,7 +29,7 @@ export async function main() {
     key: "c",
     handler: () => {
       console.log("\nChecking status via shortcut...");
-      childProcess.stdin.write("2");
+      childProcess.pty.write("2");
     },
     description: "Check status",
   });
@@ -38,7 +38,7 @@ export async function main() {
     key: "l",
     handler: () => {
       console.log("\nShowing logs...");
-      childProcess.stdin.write("3");
+      childProcess.pty.write("3");
     },
     description: "Show logs",
   });
